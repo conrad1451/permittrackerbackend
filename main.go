@@ -66,16 +66,7 @@ type MyPermitRecord struct {
 }
 
 var db *sql.DB
-// var descopeClient *client.DescopeClient
-
-// var isAnAdmin bool
-// // Define a custom key type to avoid collisions
-// type contextKey string
-
-// const contextKeyUserID contextKey = "userID"
-// const contextKeyTeacherID contextKey = "teacherID" // A key for the teacher ID
-
-
+ 
 
 func mustGetEnv(key string) string {
 	val := os.Getenv(key)
@@ -110,55 +101,6 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
     // Write the file content to the response
     w.Write(favicon)
 }
-
- // sessionValidationMiddleware is a middleware to validate the Descope session token.
-// func sessionValidationMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		sessionToken := r.Header.Get("Authorization")
-// 		if sessionToken == "" {
-// 			http.Error(w, "Unauthorized: No session token provided", http.StatusUnauthorized)
-// 			return
-// 		}
-
-// 		sessionToken = strings.TrimPrefix(sessionToken, "Bearer ")
-
-// 		ctx := r.Context()
-// 		authorized, token, err := descopeClient.Auth.ValidateSessionWithToken(ctx, sessionToken)
-// 		if err != nil || !authorized {
-// 			log.Printf("Session validation failed: %v", err)
-// 			http.Error(w, "Unauthorized: Invalid session token", http.StatusUnauthorized)
-// 			return
-// 		}
-// 		if descopeClient.Auth.ValidateRoles(context.Background(), token, []string{"Game Admin"}) {
-// 			isAnAdmin = true
-// 		} else {
-// 			isAnAdmin = false
-// 		}
-
-// 		userID := token.ID
-// 		// userRole := token.GetTenants()
-// 		// userRole := token.GetTenantValue()
-// 		// userRole := token.GetTenants()
-// 		if userID == "" {
-// 			http.Error(w, "Unauthorized: User ID not found in token", http.StatusUnauthorized)
-// 			return
-// 		}
-
-// 		// For this example, we assume the player ID is the same as the user ID.
-// 		// In a real-world app, you would extract this from custom claims in the token.
-// 		playerID := userID
-
-// 		// Store the user ID and teacher ID in the request's context
-// 		ctxWithUserID := context.WithValue(ctx, contextKeyUserID, userID)
-// 		ctxWithIDs := context.WithValue(ctxWithUserID, contextKeyPlayerID, playerID)
-
-// 		next.ServeHTTP(w, r.WithContext(ctxWithIDs))
-// 	})
-// }
-func main() {
-	// connStr := mustGetEnv("IBM_DOCKER_PSQL_MONARCH")
-	// connStr := mustGetEnv("NEON_DB_MONARCH")
-	connStr := mustGetEnv("XATA_DB_MONARCH")
 	
 	var err error
 	db, err = sql.Open("postgres", connStr)
@@ -350,44 +292,7 @@ func getAllMonarchsAsAdmin(w http.ResponseWriter, _ *http.Request) {
 
 	// getMonarchButterfliesSingleDayAsAdmin("june212025", w, nil)
 }
-
-// getAllgodbstudents handles GET requests to retrieve all student records for the authenticated teacher.
-// func getAllMonarchsAsTeacher(w http.ResponseWriter, r *http.Request) {
-// 	teacherID, ok := r.Context().Value(contextKeyTeacherID).(string)
-// 	if !ok || teacherID == "" {
-// 		http.Error(w, "Forbidden: Teacher ID not found in session", http.StatusForbidden)
-// 		return
-// 	}
-
-// 	var students []Student
-// 	query := `SELECT id, first_name, last_name, email, major, teacher_id FROM godbstudents WHERE teacher_id = $1 ORDER BY id`
-// 	rows, err := db.Query(query, teacherID)
-
-// 	if err != nil {
-// 		http.Error(w, fmt.Sprintf("Error retrieving students: %v", err), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	defer rows.Close()
-
-// 	for rows.Next() {
-// 		var student Student
-// 		err := rows.Scan(&student.ID, &student.FirstName, &student.LastName, &student.Email, &student.Major, &student.TeacherID)
-// 		if err != nil {
-// 			log.Printf("Error scanning student row: %v", err)
-// 			continue
-// 		}
-// 		students = append(students, student)
-// 	}
-
-// 	if err = rows.Err(); err != nil {
-// 		http.Error(w, fmt.Sprintf("Error iterating over student rows: %v", err), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	w.Header().Set("Content-Type", "application/json")
-// 	json.NewEncoder(w).Encode(students)
-// }
-
+ 
 // CHQ: Gemini AI corrected parameters to ignore the r
 func getAllMonarchs(w http.ResponseWriter, _ *http.Request) {
 	// if (isAnAdmin) {
@@ -613,54 +518,6 @@ func healthDBHandler(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
-
-
-// createDailyViewHandler processes the POST request to create the view
-// func createDailyViewHandler(w http.ResponseWriter, r *http.Request) {
-//     // 1. Only allow POST requests
-//     if r.Method != http.MethodPost {
-//         http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-//         return
-//     }
-
-//     // 2. Decode the JSON request body
-//     var req ViewCreationRequest
-//     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-//         http.Error(w, "Invalid JSON input: "+err.Error(), http.StatusBadRequest)
-//         return
-//     }
-
-//     // 3. Validate required integer fields (string fields will be empty if not provided)
-//     if req.PYear == 0 || req.PStartDay == 0 || req.PEndDay == 0 || req.PMonth == "" || req.PState == "" {
-//         http.Error(w, "Missing one or more required parameters (p_year, p_month, p_start_day, p_end_day, p_state)", http.StatusBadRequest)
-//         return
-//     }
-
-//     // 4. Construct the SQL function call
-//     // Note: The '$1', '$2', etc., notation is for PostgreSQL parameterized queries,
-//     // which prevents SQL injection.
-//     sqlCall := `SELECT create_daily_data_view($1, $2, $3, $4, $5)`
-
-//     // 5. Execute the function
-//     var confirmationMessage string
-//     err := db.QueryRow(
-//         sqlCall, 
-//         req.PYear, 
-//         req.PMonth, 
-//         req.PStartDay, 
-//         req.PEndDay, 
-//         req.PState,
-//     ).Scan(&confirmationMessage)
-
-//     if err != nil {
-//         // If the database function raised an exception (e.g., invalid day range),
-//         // the error will be caught here.
-//         log.Printf("Error executing function: %v", err)
-//         http.Error(w, fmt.Sprintf("Database operation failed: %s", err.Error()), http.StatusInternalServerError)
-//         return
-//     }
-
-//     // 6. Send the success response
 //     w.Header().Set("Content-Type", "application/json")
 //     w.WriteHeader(http.StatusOK)
 //     json.NewEncoder(w).Encode(map[string]string{
