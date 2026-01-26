@@ -1,0 +1,20 @@
+.env
+
+node_modules
+# git attributes controls line endings, linguist behavior, etc. - Ignoring it can cause cross-platform issues later.
+#.gitattributes
+
+rugged-sentry-466306-h8-9218858678f6.json
+
+# Terraform generated files
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+generated/prisma
+terraform_config/ibm/*.tfstate
+terraform_config/ibm/*/*.tfstate
+terraform_config/gcp/*.tfstate
+terraform_config/ibm/*.backup
+terraform_config/gcp/*.backup
+ 
