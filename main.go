@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	"regexp"
 	"time"
 
 	// The `pq` package is a pure Go PostgreSQL driver for `database/sql`.
@@ -101,6 +101,9 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
     // Write the file content to the response
     w.Write(favicon)
 }
+ 
+func main() { 
+	connStr := mustGetEnv("XATA_DB_CONSTRUCTION")
 	
 	var err error
 	db, err = sql.Open("postgres", connStr)
@@ -123,9 +126,9 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	// protectedRoutes := router.PathPrefix("/api").Subrouter()
 	// protectedRoutes.Use(sessionValidationMiddleware) // Apply middleware to all routes in this subrouter
 
-	// protectedRoutes.HandleFunc("/monarchbutterlies/dayscan/{calendarDate}", getSingleDayScan).Methods("GET")
+	// protectedRoutes.HandleFunc("/monarchbutterlies/dayscan/{calendarDate}", scanDateRange).Methods("GET")
  
-	router.HandleFunc("/monarchbutterlies/dayscan/{calendarDate}", getSingleDayScan).Methods("GET")
+	router.HandleFunc("/permittracker/scanner/from={startDate}to={endDate}", scanDateRange).Methods("GET")
   
 	router.HandleFunc("/monarchbutterlies/scanneddates", getValidDates).Methods("GET")
 
@@ -304,55 +307,12 @@ func getAllMonarchs(w http.ResponseWriter, _ *http.Request) {
 	// }
 }
 
-func generateTableName(day int, monthInt int, year int) string {
-	// 1. Define the equivalent of my_calendar (a map in Go)
-	// You would typically define this map globally or pass it in,
-	// but defining it here works for a direct conversion.
-
-	monthIntToStr := ""
-
-	if(monthInt < 10){
-		monthIntToStr = ("0" + strconv.Itoa(monthInt))
-	} else {
-		monthIntToStr = strconv.Itoa(monthInt)
-	}
-  
-	myCalendar := map[string]string{
-		"01":   "january",
-		"02":   "february",
-		"03":   "march",
-		"04":   "april",
-		"05":   "may",
-		"06":   "june",
-		"07":   "july",
-		"08":    "august",
-		"09": "september",
-		"10":   "october",
-		"11":  "november",
-		"12":  "december",
-	}
-
-	// Retrieve the month string from the map
-	// monthStr, ok := myCalendar[month]
-	monthStr, ok := myCalendar[monthIntToStr]
- 
-	if !ok {
-		// Handle case where the month is not found (optional, but good practice)
-		return "Error: Invalid month"
-	}
-
-	// 2. Implement the conditional logic and string concatenation
-	var tableName string
-	yearStr := strconv.Itoa(year) // Convert int year to string
-
-  	// FIX: Use %02d to ensure single-digit days (like 8) are formatted with a leading zero ("08").
-	// This makes it compatible with table names like june082025.
-	dayStr := fmt.Sprintf("%02d", day)
-	tableName = fmt.Sprintf("%s%s%s", monthStr, dayStr, yearStr)
+func generateTableName(startDate string, endDate string) string {
+   	var tableName string 
+	tableName = "permit_durations_" + startDate + "_to_" + endDate 
 
 	return tableName
 }
-
 
 // func getValidDates(w http.ResponseWriter, r *http.Request) {
 func getValidDates(w http.ResponseWriter, _ *http.Request) {
@@ -423,73 +383,62 @@ func getValidDates(w http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(w).Encode(theRecords)
 }
 
+func isAValidDate(){
+
+}
+
 // CHQ: Gemini AI added log statements to debug
-func getSingleDayScan(w http.ResponseWriter, r *http.Request) {
+func scanDateRange(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	// Get the date as a string (MMDDYYYY)
-	dateStr := vars["calendarDate"]
+	// Get the date as a string (YYYY-MM-DD)
+	startDate := vars["startDate"]
+	endDate := vars["endDate"]
 
 	// **********************************************
 	// DEBUG LOGGING ADDED HERE TO SEE THE RECEIVED DATE STRING AND LENGTH
 	// **********************************************
-	log.Printf("Received calendarDate: %s (Length: %d)", dateStr, len(dateStr))
+	log.Printf("Received startDate: %s (Length: %d)", startDate, len(startDate))
+	log.Printf("Received endDate: %s (Length: %d)", startDate, len(endDate))
+
+	theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
+
+	startDayMatch, err1 := regexp.MatchString(theRegex, startDate)
+	if err1 != nil {
+		fmt.Println("Error compiling regex:", err1)
+		return
+	}
+
+	endDayMatch, err2 := regexp.MatchString(theRegex, endDate)
+	if err2 != nil {
+		fmt.Println("Error compiling regex:", err2)
+		return
+	}
 
 	// 1. String length check (must be exactly 8 characters)
-	if len(dateStr) != 8 {
-		http.Error(w, "Invalid date given - expected 8 digits in MMDDYYYY format", http.StatusBadRequest)
-		log.Printf("Invalid date string length: %s, expected 8", dateStr)
+	if (!(startDayMatch && endDayMatch) ){
+	// if len(startDate) != 10 || len(endDate) != 10 {
+		http.Error(w, "Invalid date given - expected format of YYYY-MM-DD format", http.StatusBadRequest)
+		log.Printf("Invalid date given - expected format of YYYY-MM-DD format")
 		return
-	}
-
-	// 2. Extract components using string slicing (MMDDYYYY)
-	monthStr := dateStr[0:2] // MM (e.g., "06")
-	dayStr := dateStr[2:4]   // DD (e.g., "30")
-	yearStr := dateStr[4:8]  // YYYY (e.g., "2025")
-
-	// 3. Convert day and year to integers for table name generation
-	dayInt, err := strconv.Atoi(dayStr)
-	if err != nil {
-		http.Error(w, "Invalid day format in date", http.StatusBadRequest)
-		log.Printf("Invalid day format: %s", dayStr)
-		return
-	}
-
-	yearInt, err := strconv.Atoi(yearStr)
-	if err != nil {
-		http.Error(w, "Invalid year format in date", http.StatusBadRequest)
-		log.Printf("Invalid year format: %s", yearStr)
-		return
-	}
+	} 
 	
-	// Check if monthStr is a valid two-digit number
-	// Although we use monthStr in generateTableName, we need to ensure it's a number
-	if _, err := strconv.Atoi(monthStr); err != nil {
-		http.Error(w, "Invalid month format in date: not a number", http.StatusBadRequest)
-		log.Printf("Invalid month format: %s", monthStr)
-		return
-	}
-
-	monthInt, err := strconv.Atoi(monthStr)
-	if err != nil {
-		http.Error(w, "Invalid month format in date", http.StatusBadRequest)
-		log.Printf("Invalid month format: %s", monthStr)
-		return	
-	}
+	// i should make the ETL so that instead of permit_durations, it titles each table it makes 
+	// permit_durations_date1_date2
 	
 	// The `useVariable` flag is preserved from your original code
-	useVariable := false 
+	// useVariable := false 
 
 	// Generate the dynamic table name using the string-based month
-	myChoice := generateTableName(dayInt, monthInt, yearInt)
+	myChoice := generateTableName(startDate, endDate)
 
-	// If useVariable is false, override with the hardcoded test table name
-	if useVariable {
-		myChoice = "june212025"
-		log.Printf("Using hardcoded table name: %s", myChoice)
-	} else {
-		log.Printf("Using generated table name: %s", myChoice)
-	}
+	// // If useVariable is false, override with the hardcoded test table name
+	// if useVariable {
+	// 	myChoice = "permit_durations_2025-06-30_to_2026-01-24"
+	// 	log.Printf("Using hardcoded table name: %s", myChoice)
+	// } else {
+	// 	log.Printf("Using generated table name: %s", myChoice)
+	// }
 
 	// Call the function to fetch data from the determined table
 	getMonarchButterfliesSingleDayAsAdmin(myChoice, w, nil)
