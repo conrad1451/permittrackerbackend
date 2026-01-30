@@ -146,42 +146,13 @@ func main() {
 	fmt.Printf("Server listening on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, corsRouter))
 }
-
-func getAllMonarchsAsAdmin2(w http.ResponseWriter, _ *http.Request) {
-	var monarchButterflies []MyMonarchRecord
-	query := `SELECT * FROM "2025_M06_JUN_2025_butterflies_CT" ORDER BY "date_only"`
-	rows, err := db.Query(query)
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving butterflies: %v", err), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var monarchButterfly MyMonarchRecord
-		err := rows.Scan(&monarchButterfly.DateOnly, &monarchButterfly.TimeOnly, &monarchButterfly.CityOrTown, &monarchButterfly.County, &monarchButterfly.StateProvince)
-		if err != nil {
-			log.Printf("Error scanning monarch butterfly row: %v", err)
-			continue
-		}
-		monarchButterflies = append(monarchButterflies, monarchButterfly)
-	}
-
-	if err = rows.Err(); err != nil {
-		http.Error(w, fmt.Sprintf("Error iterating over monarch butterfly rows: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(monarchButterflies)
-}
+ 
 
 // CHQ: Gemini AI corrected function
 // Corrected getAllMonarchsAsAdmin to ignore the 'r' parameter
-// func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseWriter, r *http.Request) {
+// func getPermitsInDateRange(theTablename string, w http.ResponseWriter, r *http.Request) {
 
-func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseWriter, _ *http.Request) {
+func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.Request) {
 	// // 1. Establish DB Connection
 	// connStr := os.Getenv("IBM_DOCKER_PSQL_MONARCH")
 	// db, err := sql.Open("postgres", connStr)
@@ -200,16 +171,36 @@ func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseW
 	// 	return
 	// }
 	
-	var monarchButterflies []MyMonarchRecord
+	var constructionPermits []MyPermitRecord
 	tableName := theTablename
 	
-	// Explicitly listing all 35 columns to match the struct fields.
-	query := fmt.Sprintf(`SELECT "gbifID", "datasetKey", "publishingOrgKey", "eventDate", "eventDateParsed", "year", "month", "day", "day_of_week", "week_of_year", "date_only", "scientificName", "vernacularName", "taxonKey", "kingdom", "phylum", "class", "order", "family", "genus", "species", "decimalLatitude", "decimalLongitude", "coordinateUncertaintyInMeters", "countryCode", "stateProvince", "individualCount", "basisOfRecord", "recordedBy", "occurrenceID", "collectionCode", "catalogNumber", "county", "cityOrTown", "time_only" FROM "%s" ORDER BY "date_only"`, tableName)
-	
+	// Explicitly listing all columns to match the struct fields.
+	query := fmt.Sprintf(`SELECT
+	"PermitID",
+	"PermitNumber",
+	"PermitType",
+	"PermitSubtype",
+			"FileDate",
+			"IssueDate",
+			"FinalDate",
+			"ApprovalDuration",
+			"ConstructionDuration",
+			"TotalDuration",
+			"ApprovalRatio",
+			"ConstructionRatio",
+			"DurationCategory",
+			"BottleneckPhase",
+			"PropertyType",
+			"JobValue",
+			"TimeOnly", 	
+		
+		FROM "%s" ORDER BY "IssueDate"`, tableName)
+	 
+
 	// 3. Execute Query
 	rows, err := db.Query(query)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving butterflies: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error retrieving permits: %v", err), http.StatusInternalServerError)
 		log.Printf("Query failed for table %s: %v", tableName, err) // Log 3: Query failure
 		return
 	}
@@ -217,50 +208,32 @@ func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseW
 
 	// 4. Iterate and Scan Rows
 	for rows.Next() {
-		var record MyMonarchRecord
+		var record MyPermitRecord
 		err := rows.Scan(
-			&record.GBIFID,
-			&record.DatasetKey,
-			&record.PublishingOrgKey,
-			&record.EventDate,
-			&record.EventDateParsed,
-			&record.Year,
-			&record.Month,
-			&record.Day,
-			&record.DayOfWeek,
-			&record.WeekOfYear,
-			&record.DateOnly,
-			&record.ScientificName,
-			&record.VernacularName,
-			&record.TaxonKey,
-			&record.Kingdom,
-			&record.Phylum,
-			&record.Class,
-			&record.Order,
-			&record.Family,
-			&record.Genus,
-			&record.Species,
-			&record.DecimalLatitude,
-			&record.DecimalLongitude,
-			&record.CoordinateUncertaintyInMeters,
-			&record.CountryCode,
-			&record.StateProvince,
-			&record.IndividualCount,
-			&record.BasisOfRecord,
-			&record.RecordedBy,
-			&record.OccurrenceID,
-			&record.CollectionCode,
-			&record.CatalogNumber,
-			&record.County,
-			&record.CityOrTown,
-			&record.TimeOnly,
+			&record.PermitID,
+			&record.PermitNumber,
+			&record.PermitType,
+			&record.PermitSubtype,
+			&record.FileDate,
+			&record.IssueDate,
+			&record.FinalDate,
+			&record.ApprovalDuration,
+			&record.ConstructionDuration,
+			&record.TotalDuration,
+			&record.ApprovalRatio,
+			&record.ConstructionRatio,
+			&record.DurationCategory,
+			&record.BottleneckPhase,
+			&record.PropertyType,
+			&record.JobValue,
+			&record.TimeOnly,   
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to scan row: %v", err), http.StatusInternalServerError)
 			log.Printf("Failed to scan row from table %s: %v", tableName, err) // Log 4: Scan failure
 			return
 		}
-		monarchButterflies = append(monarchButterflies, record)
+		constructionPermits = append(constructionPermits, record)
 	}
 
 	// 5. Check for Row Iteration Errors
@@ -272,40 +245,9 @@ func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseW
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(monarchButterflies)
-}
-
-// Corrected getAllMonarchsAsAdmin to ignore the 'r' parameter
-func getAllMonarchsAsAdmin(w http.ResponseWriter, _ *http.Request) {
-	// connStr := os.Getenv("IBM_DOCKER_PSQL_MONARCH")
-	// db, err := sql.Open("postgres", connStr)
-	// if err != nil {
-	// 	http.Error(w, fmt.Sprintf("Failed to connect to database: %v", err), http.StatusInternalServerError)
-	// 	log.Printf("Failed to connect to database: %v", err)
-	// 	return
-	// }
-	// defer db.Close()
-
-	// err = db.Ping()
-	// if err != nil {
-	// 	http.Error(w, fmt.Sprintf("Database ping failed: %v", err), http.StatusInternalServerError)
-	// 	log.Printf("Database ping failed: %v", err)
-	// 	return
-	// }
-
-	// getMonarchButterfliesSingleDayAsAdmin("june212025", w, nil)
+	json.NewEncoder(w).Encode(constructionPermits)
 }
  
-// CHQ: Gemini AI corrected parameters to ignore the r
-func getAllMonarchs(w http.ResponseWriter, _ *http.Request) {
-	// if (isAnAdmin) {
-		getAllMonarchsAsAdmin2(w, nil) // You can pass nil as the request since the function doesn't use it
-
-    // getAllMonarchsAsAdmin(w, nil) // You can pass nil as the request since the function doesn't use it
-	// } else {
-		// getAllMonarchsAsTeacher(w, r)
-	// }
-}
 
 func generateTableName(startDate string, endDate string) string {
    	var tableName string 
@@ -319,7 +261,7 @@ func getValidDates(w http.ResponseWriter, _ *http.Request) {
 
 	
 // }
-// func getMonarchButterfliesSingleDayAsAdmin(theTablename string, w http.ResponseWriter, _ *http.Request) {
+// func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.Request) {
 // 	// // 1. Establish DB Connection
 // 	// connStr := os.Getenv("IBM_DOCKER_PSQL_MONARCH")
 // 	// db, err := sql.Open("postgres", connStr)
@@ -382,10 +324,7 @@ func getValidDates(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(theRecords)
 }
-
-func isAValidDate(){
-
-}
+ 
 
 // CHQ: Gemini AI added log statements to debug
 func scanDateRange(w http.ResponseWriter, r *http.Request) {
@@ -441,7 +380,7 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	// Call the function to fetch data from the determined table
-	getMonarchButterfliesSingleDayAsAdmin(myChoice, w, nil)
+	getPermitsInDateRange(myChoice, w, nil)
 }
 
 
