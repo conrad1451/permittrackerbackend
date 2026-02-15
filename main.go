@@ -111,12 +111,8 @@ func main() {
 	// protectedRoutes := router.PathPrefix("/api").Subrouter()
 	// protectedRoutes.Use(sessionValidationMiddleware) // Apply middleware to all routes in this subrouter
 
-	// protectedRoutes.HandleFunc("/monarchbutterlies/dayscan/{calendarDate}", scanDateRange).Methods("GET")
- 
-	router.HandleFunc("/permittracker/scanner/from={startDate}to={endDate}", scanDateRange).Methods("GET")
-  
-	router.HandleFunc("/monarchbutterlies/scanneddates", getValidDates).Methods("GET")
-
+	router.HandleFunc("/permittracker/scanner/{startDate}/{endDate}", scanDateRange).Methods("GET")
+	
 	// --- CORS Setup ---
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
@@ -328,17 +324,11 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
 	// theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
 	theRegex := `^\d{4}-\d{2}-\d{2}$` //CHQ: source - Gemini (via Google Search)
 
-	startDayMatch, err1 := regexp.MatchString(theRegex, startDate)
-	if err1 != nil {
-		fmt.Println("Error compiling regex:", err1)
-		return
-	}
-
-	endDayMatch, err2 := regexp.MatchString(theRegex, endDate)
-	if err2 != nil {
-		fmt.Println("Error compiling regex:", err2)
-		return
-	}
+    // Using the fixed Raw String Literal with backticks
+    theRegex := `^\d{4}-\d{2}-\d{2}$`
+    
+    startMatch, _ := regexp.MatchString(theRegex, startDate)
+    endMatch, _ := regexp.MatchString(theRegex, endDate)
 
 	// 1. String length check (must be exactly 8 characters)
 	if (!(startDayMatch && endDayMatch) ){
