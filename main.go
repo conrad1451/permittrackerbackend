@@ -131,61 +131,27 @@ func main() {
 
 // CHQ: Gemini AI corrected function
 // Corrected getAllMonarchsAsAdmin to ignore the 'r' parameter
-// func getPermitsInDateRange(theTablename string, w http.ResponseWriter, r *http.Request) {
-
-func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.Request) {
-	// // 1. Establish DB Connection
-	// connStr := os.Getenv("IBM_DOCKER_PSQL_MONARCH")
-	// db, err := sql.Open("postgres", connStr)
-	// if err != nil {
-	// 	log.Printf("Failed to connect to database: %v", err) // Log 1: Connection failure
-	// 	http.Error(w, fmt.Sprintf("Failed to connect to database: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
-	// defer db.Close()
-
-	// // 2. Ping DB
-	// err = db.Ping()
-	// if err != nil {
-	// 	log.Printf("Database ping failed: %v", err) // Log 2: Ping failure
-	// 	http.Error(w, fmt.Sprintf("Database ping failed: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
-	
+func getPermitsInDateRange(startDate string, endDate string, w http.ResponseWriter) {
 	var constructionPermits []MyPermitRecord
-	tableName := theTablename
-	
-	// Explicitly listing all columns to match the struct fields.
-	query := fmt.Sprintf(`SELECT
-	"PermitID",
-	"PermitNumber",
-	"PermitType",
-	"PermitSubtype",
-			"FileDate",
-			"IssueDate",
-			"FinalDate",
-			"ApprovalDuration",
-			"ConstructionDuration",
-			"TotalDuration",
-			"ApprovalRatio",
-			"ConstructionRatio",
-			"DurationCategory",
-			"BottleneckPhase",
-			"PropertyType",
-			"JobValue",
-			"TimeOnly" 	
-		
-		FROM "%s" ORDER BY "IssueDate"`, tableName)
-	 
 
-	// 3. Execute Query
-	rows, err := db.Query(query)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving permits: %v", err), http.StatusInternalServerError)
-		log.Printf("Query failed for table %s: %v", tableName, err) // Log 3: Query failure
-		return
-	}
-	defer rows.Close()
+    // Querying the static table with a WHERE clause
+    query := `SELECT
+        "PermitID", "PermitNumber", "PermitType", "PermitSubtype",
+        "FileDate", "IssueDate", "FinalDate",
+        "ApprovalDuration", "ConstructionDuration", "TotalDuration",
+        "ApprovalRatio", "ConstructionRatio", "DurationCategory",
+        "BottleneckPhase", "PropertyType", "JobValue", "TimeOnly"
+        FROM permit_durations 
+        WHERE "FileDate" >= $1 AND "FileDate" < $2
+        ORDER BY "IssueDate"`
+
+    rows, err := db.Query(query, startDate, endDate)
+    if err != nil {
+        log.Printf("Query failed: %v", err)
+        http.Error(w, "Database query error", http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
 
 	// 4. Iterate and Scan Rows
 	for rows.Next() {
@@ -211,7 +177,7 @@ func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.R
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to scan row: %v", err), http.StatusInternalServerError)
-			log.Printf("Failed to scan row from table %s: %v", tableName, err) // Log 4: Scan failure
+			log.Printf("Failed to scan row from permit_durations: %v", err) // Log 4: Scan failure
 			return
 		}
 		constructionPermits = append(constructionPermits, record)
@@ -220,7 +186,7 @@ func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.R
 	// 5. Check for Row Iteration Errors
 	if err = rows.Err(); err != nil {
 		http.Error(w, fmt.Sprintf("Error iterating over monarch butterfly rows: %v", err), http.StatusInternalServerError)
-		log.Printf("Error iterating over rows from table %s: %v", tableName, err) // Log 5: Row iteration error
+		// log.Printf("Error iterating over rows from table %s: %v", tableName, err) // Log 5: Row iteration error
 		return
 	}
 
@@ -327,8 +293,9 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    myChoice := generateTableName(startDate, endDate)
-    getPermitsInDateRange(myChoice, w, r)
+    // myChoice := generateTableName(startDate, endDate)
+    // getPermitsInDateRange(myChoice, w, r)
+	getPermitsInDateRange(startDate, endDate, w)
 }
 
  
