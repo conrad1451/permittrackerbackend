@@ -309,20 +309,12 @@ func getValidDates(w http.ResponseWriter, _ *http.Request) {
 
 // CHQ: Gemini AI added log statements to debug
 func scanDateRange(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+    vars := mux.Vars(r)
+    startDate := vars["startDate"]
+    endDate := vars["endDate"]
 
-	// Get the date as a string (YYYY-MM-DD)
-	startDate := vars["startDate"]
-	endDate := vars["endDate"]
-
-	// **********************************************
-	// DEBUG LOGGING ADDED HERE TO SEE THE RECEIVED DATE STRING AND LENGTH
-	// **********************************************
-	log.Printf("Received startDate: %s (Length: %d)", startDate, len(startDate))
-	log.Printf("Received endDate: %s (Length: %d)", endDate, len(endDate))
-
-	// theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
-	theRegex := `^\d{4}-\d{2}-\d{2}$` //CHQ: source - Gemini (via Google Search)
+    log.Printf("Received startDate: %s", startDate)
+    log.Printf("Received endDate: %s", endDate)
 
     // Using the fixed Raw String Literal with backticks
     theRegex := `^\d{4}-\d{2}-\d{2}$`
