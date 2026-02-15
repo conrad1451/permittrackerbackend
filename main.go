@@ -338,7 +338,7 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
 	// DEBUG LOGGING ADDED HERE TO SEE THE RECEIVED DATE STRING AND LENGTH
 	// **********************************************
 	log.Printf("Received startDate: %s (Length: %d)", startDate, len(startDate))
-	log.Printf("Received endDate: %s (Length: %d)", startDate, len(endDate))
+	log.Printf("Received endDate: %s (Length: %d)", endDate, len(endDate))
 
 	theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
 
