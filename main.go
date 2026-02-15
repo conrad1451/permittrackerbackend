@@ -322,34 +322,16 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
     startMatch, _ := regexp.MatchString(theRegex, startDate)
     endMatch, _ := regexp.MatchString(theRegex, endDate)
 
-	// 1. String length check (must be exactly 8 characters)
-	if (!(startDayMatch && endDayMatch) ){
-	// if len(startDate) != 10 || len(endDate) != 10 {
-		http.Error(w, "Invalid date given - expected format of YYYY-MM-DD format", http.StatusBadRequest)
-		log.Printf("Invalid date given - expected format of YYYY-MM-DD format")
-		return
-	} 
-	
-	// i should make the ETL so that instead of permit_durations, it titles each table it makes 
-	// permit_durations_date1_date2
-	
-	// The `useVariable` flag is preserved from your original code
-	// useVariable := false 
+    if !startMatch || !endMatch {
+        http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
+        return
+    }
 
-	// Generate the dynamic table name using the string-based month
-	myChoice := generateTableName(startDate, endDate)
-
-	// // If useVariable is false, override with the hardcoded test table name
-	// if useVariable {
-	// 	myChoice = "permit_durations_2025-06-30_to_2026-01-24"
-	// 	log.Printf("Using hardcoded table name: %s", myChoice)
-	// } else {
-	// 	log.Printf("Using generated table name: %s", myChoice)
-	// }
-
-	// Call the function to fetch data from the determined table
-	getPermitsInDateRange(myChoice, w, nil)
+    myChoice := generateTableName(startDate, endDate)
+    getPermitsInDateRange(myChoice, w, r)
 }
+
+ 
 
 
 // CHQ: Gemini AI created function
