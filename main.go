@@ -340,7 +340,8 @@ func scanDateRange(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received startDate: %s (Length: %d)", startDate, len(startDate))
 	log.Printf("Received endDate: %s (Length: %d)", endDate, len(endDate))
 
-	theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
+	// theRegex := `^\\d{4}-\\d{2}-\\d{2}$` //CHQ: source - Gemini (via Google Search)
+	theRegex := `^\d{4}-\d{2}-\d{2}$` //CHQ: source - Gemini (via Google Search)
 
 	startDayMatch, err1 := regexp.MatchString(theRegex, startDate)
 	if err1 != nil {
