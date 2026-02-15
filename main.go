@@ -173,7 +173,7 @@ func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.R
 			"BottleneckPhase",
 			"PropertyType",
 			"JobValue",
-			"TimeOnly", 	
+			"TimeOnly" 	
 		
 		FROM "%s" ORDER BY "IssueDate"`, tableName)
 	 
