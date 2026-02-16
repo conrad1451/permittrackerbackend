@@ -86,7 +86,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 }
  
 func main() { 
-	connStr := mustGetEnv("XATA_DB_CONSTRUCTION")
+	connStr := mustGetEnv("NEON_DB_CONSTRUCTION")
 	
 	var err error
 	db, err = sql.Open("postgres", connStr)
