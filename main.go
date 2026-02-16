@@ -170,7 +170,7 @@ func getPermitsInDateRange(startDate string, endDate string, w http.ResponseWrit
 			&record.DurationCategory,
 			&record.BottleneckPhase,
 			&record.PropertyType,
-			&record.JobValue
+			&record.JobValue,
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to scan row: %v", err), http.StatusInternalServerError)
