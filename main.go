@@ -202,29 +202,7 @@ func generateTableName(startDate string, endDate string) string {
 
 // func getValidDates(w http.ResponseWriter, r *http.Request) {
 func getValidDates(w http.ResponseWriter, _ *http.Request) {
-
-	
-// }
-// func getPermitsInDateRange(theTablename string, w http.ResponseWriter, _ *http.Request) {
-// 	// // 1. Establish DB Connection
-// 	// connStr := os.Getenv("IBM_DOCKER_PSQL_MONARCH")
-// 	// db, err := sql.Open("postgres", connStr)
-// 	// if err != nil {
-// 	// 	log.Printf("Failed to connect to database: %v", err) // Log 1: Connection failure
-	// 	http.Error(w, fmt.Sprintf("Failed to connect to database: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
-	// defer db.Close()
-
-	// // 2. Ping DB
-	// err = db.Ping()
-	// if err != nil {
-	// 	log.Printf("Database ping failed: %v", err) // Log 2: Ping failure
-	// 	http.Error(w, fmt.Sprintf("Database ping failed: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
-	
-	var theRecords []RecordStore
+  	var theRecords []RecordStore
  	
 	// Explicitly listing all 35 columns to match the struct fields.
 	query := `SELECT * FROM data_inventory`
