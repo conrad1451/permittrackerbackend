@@ -140,8 +140,8 @@ func getPermitsInDateRange(startDate string, endDate string, w http.ResponseWrit
         "approval_ratio", "construction_ratio", "duration_category",
         "bottleneck_phase", "property_type", "job_value"
         FROM permit_durations 
-        WHERE "FileDate" >= $1 AND "FileDate" < $2
-        ORDER BY "IssueDate"`
+        WHERE "file_date" >= $1 AND "file_date" < $2
+        ORDER BY "issue_date"`
 
     rows, err := db.Query(query, startDate, endDate)
     if err != nil {
