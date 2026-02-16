@@ -136,11 +136,11 @@ func getPermitsInDateRange(startDate string, endDate string, w http.ResponseWrit
 
     // Querying the static table with a WHERE clause
     query := `SELECT
-        "PermitID", "PermitNumber", "PermitType", "PermitSubtype",
-        "FileDate", "IssueDate", "FinalDate",
-        "ApprovalDuration", "ConstructionDuration", "TotalDuration",
-        "ApprovalRatio", "ConstructionRatio", "DurationCategory",
-        "BottleneckPhase", "PropertyType", "JobValue", "TimeOnly"
+        "permit_id", "permit_number", "permit_type", "permit_subtype",
+        "file_date", "issue_date", "final_date",
+        "approval_duration", "construction_duration", "total_duration",
+        "approval_ratio", "construction_ratio", "duration_category",
+        "bottleneck_phase", "property_type", "job_value", "time_only"
         FROM permit_durations 
         WHERE "FileDate" >= $1 AND "FileDate" < $2
         ORDER BY "IssueDate"`
