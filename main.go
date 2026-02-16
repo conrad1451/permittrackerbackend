@@ -25,7 +25,6 @@ import (
 	Table_name         *string    `json:"table_name"`
 	Processed_at                *string    `json:"processed_at"`
  	Record_count                     *int       `json:"record_count"`    
-	// TimeOnly                 *string    `json:"time_only"` // Storing as string to handle "time without time zone"
 }
 
 // CHQ: Gemini AI edited struct to correct types
@@ -47,7 +46,6 @@ type MyPermitRecord struct {
 	BottleneckPhase            *string    `json:"bottleneck_phase"`
 	PropertyType               *string    `json:"property_type"`
 	JobValue                   *float64   `json:"job_value"`
-   	TimeOnly                   *string    `json:"time_only"` // Storing as string to handle "time without time zone"
 }
 
 var db *sql.DB
@@ -140,7 +138,7 @@ func getPermitsInDateRange(startDate string, endDate string, w http.ResponseWrit
         "file_date", "issue_date", "final_date",
         "approval_duration", "construction_duration", "total_duration",
         "approval_ratio", "construction_ratio", "duration_category",
-        "bottleneck_phase", "property_type", "job_value", "time_only"
+        "bottleneck_phase", "property_type", "job_value"
         FROM permit_durations 
         WHERE "FileDate" >= $1 AND "FileDate" < $2
         ORDER BY "IssueDate"`
