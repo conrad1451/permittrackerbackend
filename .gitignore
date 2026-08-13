@@ -1,5 +1,5 @@
 .env
-
+git-diff-edits/
 node_modules
 # git attributes controls line endings, linguist behavior, etc. - Ignoring it can cause cross-platform issues later.
 #.gitattributes
