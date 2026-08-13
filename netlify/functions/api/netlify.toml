@@ -1,0 +1,14 @@
+[build]
+  functions = "netlify/functions"
+
+[build.environment]
+  GO_VERSION = "1.21"
+
+# Public-facing API paths -> the "api" Lambda-style function.
+# Splat forwards everything after /api/ as the function's path, so
+# gorilla/mux inside main.go still sees /api/health, /api/valid-dates,
+# /api/permits/{startDate}/{endDate}, etc.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
