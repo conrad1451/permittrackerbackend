@@ -3,54 +3,66 @@
 package main
 
 import (
-
-	// The `pq` package is a pure Go PostgreSQL driver for `database/sql`.
-
 	"context"
+	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	_ "github.com/lib/pq"
+	"github.com/awslabs/aws-lambda-go-api-proxy/core"
+	"github.com/awslabs/aws-lambda-go-api-proxy/gorillamux"
+	"github.com/gorilla/mux"
 )
 
-// router dispatches based on HTTP method and whether the path ends in an id.
-// Routes:
-//
-//	GET    /api/items       -> list
-//	POST   /api/items       -> create
-//	GET    /api/items/{id}  -> get one
-//	PUT    /api/items/{id}  -> update
-//	DELETE /api/items/{id}  -> delete
+var muxAdapter *gorillamux.GorillaMuxAdapter
+
+// CHQ: Claude AI (Sonnet): corsMiddleware adds permissive 
+// CORS headers and short-circuits preflight requests. 
+// Tighten Access-Control-Allow-Origin before shipping to prod.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// CHQ: Claude AI (Sonnet): newRouter wires up the routes backed by the 
+// handlers that actually exist in handlers.go. Netlify strips the 
+// /.netlify/functions/api prefix (or whatever redirect you configure) 
+// before this router sees the path, so routes are declared relative 
+// to /api.
+func newRouter() *mux.Router {
+	r := mux.NewRouter()
+	r.Use(corsMiddleware)
+
+	r.HandleFunc("/api/health", healthDBHandler).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/valid-dates", getValidDates).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/permits/{startDate}/{endDate}", scanDateRange).Methods(http.MethodGet, http.MethodOptions)
+
+	return r
+}
+
+// CHQ: Claude AI (Sonnet): router adapts the classic API Gateway 
+// (REST API / v1 proxy) event format, which is what Netlify 
+// Functions sends, into a gorilla/mux request and back again.
 func router(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if req.HTTPMethod == "OPTIONS" {
-		return events.APIGatewayProxyResponse{StatusCode: 204, Headers: corsHeaders}, nil
+	switchableReq := core.NewSwitchableAPIGatewayRequestV1(&req)
+
+	switchableResp, err := muxAdapter.ProxyWithContext(ctx, *switchableReq)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
 	}
 
-	id, hasID := pathID(req.Path)
-
-	switch req.HTTPMethod {
-	case "GET":
-		if hasID {
-			return getItem(ctx, id)
-		}
-		return listItems(ctx)
-	case "POST":
-		return createItem(ctx, req.Body)
-	case "PUT":
-		if !hasID {
-			return errorResponse(400, "id required in path for update"), nil
-		}
-		return updateItem(ctx, id, req.Body)
-	case "DELETE":
-		if !hasID {
-			return errorResponse(400, "id required in path for delete"), nil
-		}
-		return deleteItem(ctx, id)
-	default:
-		return errorResponse(405, "method not allowed"), nil
-	}
+	return *switchableResp.Version1(), nil
 }
 
 func main() {
+	muxAdapter = gorillamux.New(newRouter())
 	lambda.Start(router)
 }

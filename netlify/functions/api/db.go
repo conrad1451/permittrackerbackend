@@ -11,7 +11,6 @@ import (
 	"time"
 
 	// The `pq` package is a pure Go PostgreSQL driver for `database/sql`.
-
 	_ "github.com/lib/pq"
 )
 
@@ -24,6 +23,10 @@ var (
 // Netlify Functions reuse warm containers between invocations, so we
 // keep the pool as a package-level singleton instead of opening a new
 // connection on every request. Keep MaxOpenConns low.
+//
+// Every handler MUST call getDB() to obtain the connection instead of
+// reading the package-level `db` variable directly - that var is only
+// populated the first time getDB() runs.
 func getDB() (*sql.DB, error) {
 	var initErr error
 	dbOnce.Do(func() {
@@ -34,22 +37,22 @@ func getDB() (*sql.DB, error) {
 		name := os.Getenv("DB_NAME")
 
 		if port == "" {
-			port = "3306"
+			port = "5432"
 		}
 
-		// tls=true is required by most hosted MySQL providers (PlanetScale, Aiven, TiDB Cloud).
-		// Set DB_TLS=skip-verify or DB_TLS=false to override for local dev.
-		tls := os.Getenv("DB_TLS")
-		if tls == "" {
-			tls = "true"
+		// sslmode=require is the safe default for hosted Postgres providers
+		// (Supabase, Neon, RDS, etc). Set DB_SSLMODE=disable for local dev.
+		sslmode := os.Getenv("DB_SSLMODE")
+		if sslmode == "" {
+			sslmode = "require"
 		}
 
 		dsn := fmt.Sprintf(
-			"%s:%s@tcp(%s:%s)/%s?parseTime=true&tls=%s&timeout=5s",
-			user, pass, host, port, name, tls,
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=5",
+			host, port, user, pass, name, sslmode,
 		)
 
-		conn, err := sql.Open("mysql", dsn)
+		conn, err := sql.Open("postgres", dsn)
 		if err != nil {
 			initErr = err
 			return
