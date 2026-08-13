@@ -5,9 +5,10 @@
   GO_VERSION = "1.21"
 
 # Public-facing API paths -> the "api" Lambda-style function.
-# Splat forwards everything after /api/ as the function's path, so
-# gorilla/mux inside main.go still sees /api/health, /api/valid-dates,
-# /api/permits/{startDate}/{endDate}, etc.
+# main.go strips the "/.netlify/functions/api" prefix from the incoming
+# path before routing, so after that strip this becomes /api/health,
+# /api/valid-dates, /api/permits/{startDate}/{endDate}, etc. - matching
+# the routes registered in newRouter().
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/api/:splat"
